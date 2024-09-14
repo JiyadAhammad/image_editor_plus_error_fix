@@ -846,6 +846,81 @@ class _SingleImageEditorState extends State<SingleImageEditor> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: <Widget>[
+                  if (widget.filtersOption != null)
+                    BottomButton(
+                      icon: Icons.color_lens,
+                      text: i18n('Filter'),
+                      onTap: () async {
+                        resetTransformation();
+
+                        /// Use case: if you don't want to stack your filter, use
+                        /// this logic. Along with code on line 888 and
+                        /// remove line 889
+                        // for (int i = 1; i < layers.length; i++) {
+                        //   if (layers[i] is BackgroundLayerData) {
+                        //     layers.removeAt(i);
+                        //     break;
+                        //   }
+                        // }
+
+                        var loadingScreen = showLoadingScreen(context);
+                        var mergedImage = await getMergedImage();
+                        loadingScreen.hide();
+
+                        if (!mounted) return;
+
+                        Uint8List? filterAppliedImage = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ImageFilters(
+                              image: mergedImage!,
+                              options: widget.filtersOption,
+                            ),
+                          ),
+                        );
+
+                        if (filterAppliedImage == null) return;
+
+                        removedLayers.clear();
+                        undoLayers.clear();
+
+                        var layer = BackgroundLayerData(
+                          image: ImageItem(filterAppliedImage),
+                        );
+
+                        /// Use case, if you don't want your filter to effect your
+                        /// other elements such as emoji and text. Use insert
+                        /// instead of add like in line 888
+                        //layers.insert(1, layer);
+                        layers.add(layer);
+
+                        await layer.image.loader.future;
+
+                        setState(() {});
+                      },
+                    ),
+                  if (widget.emojiOption != null)
+                    BottomButton(
+                      icon: FontAwesomeIcons.faceSmile,
+                      text: i18n('Emoji'),
+                      onTap: () async {
+                        EmojiLayerData? layer = await showModalBottomSheet(
+                          context: context,
+                          backgroundColor: Colors.black,
+                          builder: (BuildContext context) {
+                            return const Emojies();
+                          },
+                        );
+
+                        if (layer == null) return;
+
+                        undoLayers.clear();
+                        removedLayers.clear();
+                        layers.add(layer);
+
+                        setState(() {});
+                      },
+                    ),
                   if (widget.cropOption != null)
                     BottomButton(
                       icon: Icons.crop,
@@ -1194,81 +1269,6 @@ class _SingleImageEditorState extends State<SingleImageEditor> {
                   //     setState(() {});
                   //   },
                   // ),
-                  if (widget.filtersOption != null)
-                    BottomButton(
-                      icon: Icons.color_lens,
-                      text: i18n('Filter'),
-                      onTap: () async {
-                        resetTransformation();
-
-                        /// Use case: if you don't want to stack your filter, use
-                        /// this logic. Along with code on line 888 and
-                        /// remove line 889
-                        // for (int i = 1; i < layers.length; i++) {
-                        //   if (layers[i] is BackgroundLayerData) {
-                        //     layers.removeAt(i);
-                        //     break;
-                        //   }
-                        // }
-
-                        var loadingScreen = showLoadingScreen(context);
-                        var mergedImage = await getMergedImage();
-                        loadingScreen.hide();
-
-                        if (!mounted) return;
-
-                        Uint8List? filterAppliedImage = await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ImageFilters(
-                              image: mergedImage!,
-                              options: widget.filtersOption,
-                            ),
-                          ),
-                        );
-
-                        if (filterAppliedImage == null) return;
-
-                        removedLayers.clear();
-                        undoLayers.clear();
-
-                        var layer = BackgroundLayerData(
-                          image: ImageItem(filterAppliedImage),
-                        );
-
-                        /// Use case, if you don't want your filter to effect your
-                        /// other elements such as emoji and text. Use insert
-                        /// instead of add like in line 888
-                        //layers.insert(1, layer);
-                        layers.add(layer);
-
-                        await layer.image.loader.future;
-
-                        setState(() {});
-                      },
-                    ),
-                  if (widget.emojiOption != null)
-                    BottomButton(
-                      icon: FontAwesomeIcons.faceSmile,
-                      text: i18n('Emoji'),
-                      onTap: () async {
-                        EmojiLayerData? layer = await showModalBottomSheet(
-                          context: context,
-                          backgroundColor: Colors.black,
-                          builder: (BuildContext context) {
-                            return const Emojies();
-                          },
-                        );
-
-                        if (layer == null) return;
-
-                        undoLayers.clear();
-                        removedLayers.clear();
-                        layers.add(layer);
-
-                        setState(() {});
-                      },
-                    ),
                 ],
               ),
             ),
